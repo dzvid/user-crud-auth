@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
+import { compare, hash } from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -13,24 +18,65 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<void> {
-    this.usersRepository.save(createUserDto);
+    const userAlreadyExists = await this.usersRepository.findOneBy({
+      email: createUserDto.email,
+    });
+
+    if (userAlreadyExists) {
+      throw new BadRequestException('User already exists.');
+    }
+
+    const passwordHash = await hash(createUserDto.password, 8);
+
+    await this.usersRepository.save({
+      ...createUserDto,
+      password: passwordHash,
+    });
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.findBy({ isActive: true });
+    return await this.usersRepository.findBy({ isActive: true });
   }
 
   async findOne(id: number): Promise<User | null> {
-    return this.usersRepository.findOneBy({ id, isActive: true });
+    return await this.usersRepository.findOneBy({ id, isActive: true });
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = this.usersRepository.findOneBy({ id, isActive: true });
-    return this.usersRepository.save(Object.assign(user, updateUserDto));
+  async findOneByEmail(email: string): Promise<User | null> {
+    return await this.usersRepository.findOneBy({ email, isActive: true });
+  }
+
+  async findUserAuth(email: string): Promise<User | null> {
+    return await this.usersRepository
+      .createQueryBuilder('users')
+      .addSelect('users.password')
+      .where({ email, isActive: true })
+      .getOne();
+  }
+
+  async update(id: number, { email, nome }: UpdateUserDto): Promise<User> {
+    const user = await this.usersRepository.findOneBy({ id, isActive: true });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const emailAlreadyInUse = await this.usersRepository.findOneBy({
+      email,
+      id: Not(user.id),
+    });
+
+    if (emailAlreadyInUse) {
+      throw new BadRequestException('Email already in use by another user.');
+    }
+
+    return await this.usersRepository.save(
+      Object.assign(user, { email, nome }),
+    );
   }
 
   async remove(id: number): Promise<void> {
-    const user = this.usersRepository.findOneBy({ id });
-    this.usersRepository.save(Object.assign(user, { isActive: false }));
+    const user = await this.usersRepository.findOneBy({ id });
+    await this.usersRepository.save(Object.assign(user, { isActive: false }));
   }
 }
