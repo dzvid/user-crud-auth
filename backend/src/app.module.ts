@@ -14,7 +14,6 @@ import { AuthModule } from './auth/auth.module';
       envFilePath: `.env.${process.env.NODE_ENV}`,
       isGlobal: true,
     }),
-    AuthModule,
     UsersModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -32,6 +31,7 @@ import { AuthModule } from './auth/auth.module';
         } as TypeOrmModuleOptions;
       },
     }),
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,7 +8,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Not, Repository } from 'typeorm';
-import { compare, hash } from 'bcrypt';
+import { hash } from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -54,7 +54,7 @@ export class UsersService {
       .getOne();
   }
 
-  async update(id: number, { email, nome }: UpdateUserDto): Promise<User> {
+  async update(id: number, { email, name }: UpdateUserDto): Promise<User> {
     const user = await this.usersRepository.findOneBy({ id, isActive: true });
 
     if (!user) {
@@ -71,7 +71,7 @@ export class UsersService {
     }
 
     return await this.usersRepository.save(
-      Object.assign(user, { email, nome }),
+      Object.assign(user, { email, name }),
     );
   }
 
