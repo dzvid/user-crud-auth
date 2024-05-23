@@ -58,13 +58,22 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+### Database Setup
+```bash
+# create database with docker
+$ docker run --name app-db -e MYSQL_ROOT_PASSWORD=123456789 -e MYSQL_DATABASE=app -p 3306:3306 --restart=always -d mysql
+
+# to stop and delete db
+$ docker stop app-db && docker rm app-db
+```
+
+### Typeorm commands
+```bash
 # create migration
 $ npm run typeorm migration:run
-```
 
 # revert migration
 $ npm run typeorm migration:revert
-```
 
 # generate migrations
 $ npm run typeorm migration:generate src/database/migrations/AddUsers
